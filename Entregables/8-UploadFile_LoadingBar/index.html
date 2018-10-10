@@ -1,0 +1,46 @@
+<html lang="en">
+  <head>
+    <title>Barra de Progreso</title>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  </head>
+  <body>
+    <form action="">
+
+      <input type="file" name="fu_uploader" id="fu_uploader" class="fu_uploader" accept="*">
+      <button>Enviar datos</button>
+      <input type="text" name="vTest" id="vTest" />
+      <!-- asdf asdf asdf -->
+    </form>
+  </body>
+  <script type="text/javascript">
+    //Pone la barra en 0$
+    function initProcess(){
+      document.getElementsById("vTest").value = "0%";
+      //alert("Files " + document.getElementById('fu_uploader').files.length);
+    }
+
+    //Crea e hilo de ejecución para actualizar el progress bar
+    $(function () {
+      var socket = io();
+      $('form').submit(function(){
+        socket.emit('upload_file_srv', document.getElementById('fu_uploader').files);
+        $('#m').val('');
+        return false;
+      });
+      socket.on('upload_file_response', function(pFileLength, pMensaje){
+        var color="";
+        alert("en pantalla de vuelta "+pFileLength)
+        alert("El mensaje es  "+pMensaje)
+        if (	$("#username").val() == usr)
+        color = 'style="color:blue"';
+        else
+        color = 'style="color:red"';
+
+        $('#messages').append($('<li '+color+'>').text(msg));
+
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+    });
+  </script>
+</html>

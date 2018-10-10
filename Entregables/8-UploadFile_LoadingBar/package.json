@@ -1,0 +1,19 @@
+{
+  "name": "socket-chat-example",
+  "version": "0.0.1",
+  "description": "my first socket.io app",
+  "dependencies": {
+    "express": "^4.16.3",
+    "express-fileupload": "^1.0.0-alpha.1",
+    "formidable": "^1.2.1",
+    "jsdom": "^12.1.0",
+    "morgan": "^1.9.1",
+    "mv": "^2.1.1",
+    "progress": "^2.0.0",
+    "query-selector": "^1.0.9",
+    "socket.io": "^1.7.4"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
