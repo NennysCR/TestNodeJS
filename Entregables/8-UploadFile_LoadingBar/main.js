@@ -1,62 +1,90 @@
 
-/* #1 - npm install para descargar los paquetes...
-  npm install express
-  npm install socket.io --save
+/*  Universidad Cenfotec
+    Maestria en Ciberseguridad
+    Creado por: juan.zamora@nerdyne.com
+
+    Ejemplo 6: Subir un archivo al servidor
 */
 
 // librerias
 var express = require('express');               //npm install express
 var fileUpload = require('express-fileupload'); //npm install --save express-fileupload
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-
-var port = process.env.PORT || 3000;
+                                                //npm install mv --save-dev //se usa para mover archivos
 
 // variable que controla Express
 var app = express();
 app.use(fileUpload());
 app.use(express.static('public'));
+const SocketIOFile = require('socket.io-file');
 
-//Get
-app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
+//librerias
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+var port = process.env.PORT || 8081;
+
+/*Gets con los JSs*/
+app.get('/', function (req, res) {
+  res.sendFile( __dirname + "/" + "index.html" );
+})
+app.get('/', (req, res, next) => {
+    return res.sendFile(__dirname + '/client/index.html');
 });
+/*app.get('/app.js', (req, res, next) => {
+    return res.sendFile(__dirname + '/client/app.js');
+});*/
+app.get('/socket.io.js', (req, res, next) => {
+    return res.sendFile(__dirname + '/node_modules/socket.io-client/dist/socket.io.js');
+});
+app.get('/socket.io-file-client.js', (req, res, next) => {
+    return res.sendFile(__dirname + '/node_modules/socket.io-file-client/socket.io-file-client.js');
+});
+/*Fin gets con los JSs*/
 
 io.on('connection', function(socket){
-  socket.on('upload_file_srv', function(pFiles){
-    var MsjProceso = "";
-    var vContadorProceso = 0;
-    //socket.username = user;
-    /**/
-    if (!pFiles){
-      MsjProceso = "No se subio ningun archivo.";
-      //return res.status(400).send(MsjProceso);
-      console.log(MsjProceso);
-      return;
-    }
+  var uploader = new SocketIOFile(socket, {
+			// uploadDir: {			// multiple directories
+			// 	music: 'data/music',
+			// 	document: 'data/document'
+			// },
+			uploadDir: 'uploads',							// simple directory
+			// accepts: ['audio/mpeg', 'audio/mp3'],		// chrome and some of browsers checking mp3 as 'audio/mp3', not 'audio/mpeg'
+			// maxFileSize: 4194304, 						// 4 MB. default is undefined(no limit)
+			chunkSize: 10240,							// default is 10240(1KB)
+			transmissionDelay: 0,						// delay of each transmission, higher value saves more cpu resources, lower upload speed. default is 0(no delay)
+			overwrite: false, 							// overwrite file if exists, default is true.
+			// rename: function(filename) {
+			// 	var split = filename.split('.');	// split filename by .(extension)
+			// 	var fname = split[0];	// filename without extension
+			// 	var ext = split[1];
 
-    let upFile = pFiles[0]; //agarra el archivo de pantalla.
-    console.log("nombre del archivo es "+pFiles[0].name + ", y el tamanio es " + pFiles[0].size + "..");
-    upFile.mv('public/'+pFiles[0].name, function(err){ //Mueve el archivo a la carpeta deseada.
-        if (err){
-          MsjProceso = "Ocurrio un error al cargar el archivo " + err + "..";
-          console.log(MsjProceso);
-            //return res.status(500).send(err);
-            return;
-        }
-        MsjProceso ="Archivo se subio con exito";
-        console.log(MsjProceso);
-        //res.send(MsjProceso);
-        return;
-    });
-
-    console.log(pFiles[0].name); //imprime el nombre del archivo
-    /**/
-    io.emit('upload_file_response', pFiles.length, MsjProceso);
+			// 	return `${fname}_${count++}.${ext}`;
+			// }
+			//rename: 'MyMusic.mp3'
+		});
+  uploader.on('start', (fileInfo) => {
+    console.log('Inicia carga');
+    console.log(fileInfo);
+  });
+  uploader.on('stream', (fileInfo) => {
+    //console.log(`${fileInfo.wrote} / ${fileInfo.size} byte(s)`);
+    var vPorcCarga = ((fileInfo.wrote/fileInfo.size)*100);
+    console.log("Porcentaje de carga: " + vPorcCarga);
+    io.emit('StreamResponse', vPorcCarga);
+    //Hago un llamado a la interfaz para enviarle el porcentaje de carga
+  });
+  uploader.on('complete', (fileInfo) => {
+    console.log('Carga completa');
+    console.log(fileInfo);
+    io.emit('clean_field');
+  });
+  uploader.on('error', (err) => {
+    console.log('Error!', err);
+  });
+  uploader.on('abort', (fileInfo) => {
+    console.log('Proceso abortado: ', fileInfo);
   });
 });
 
-
 http.listen(port, function(){
-  console.log('listening on *:' + port);
+  console.log('Escuchando Puerto *:' + port);
 });

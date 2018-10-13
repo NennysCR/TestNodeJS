@@ -3,44 +3,68 @@
     <title>Barra de Progreso</title>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  	<script src="socket.io.js"></script>
+  	<script src="socket.io-file-client.js"></script>
+  	<!--<script src="app.js"></script>-->
   </head>
-  <body>
+  <!--<body>
     <form action="">
-
       <input type="file" name="fu_uploader" id="fu_uploader" class="fu_uploader" accept="*">
       <button>Enviar datos</button>
       <input type="text" name="vTest" id="vTest" />
-      <!-- asdf asdf asdf -->
+    </form>
+  </body>-->
+  <body>
+    <form id="frmSubirArchivos" name="frmSubirArchivos">
+        <!--<input type="file" id="file" multiple />-->
+        <input type="file" name="fu_uploader" id="fu_uploader" class="fu_uploader" accept="*">
+        <input type="submit" value="Enviar Datos" />
+        <input type="text" name="vTest" id="vTest"  disabled />
+        <label id="res" name="res"/>
     </form>
   </body>
   <script type="text/javascript">
-    //Pone la barra en 0$
-    function initProcess(){
-      document.getElementsById("vTest").value = "0%";
-      //alert("Files " + document.getElementById('fu_uploader').files.length);
-    }
+    var socket = io('http://localhost:8081');
+    var uploader = new SocketIOFileClient(socket);
+    var vFrm = document.getElementById('frmSubirArchivos');
 
-    //Crea e hilo de ejecución para actualizar el progress bar
+    uploader.on('start', function(fileInfo) {
+        console.log('Start uploading', fileInfo);
+    });
+    uploader.on('stream', function(fileInfo) {
+        console.log('Streaming... sent ' + fileInfo.sent + ' bytes.');
+    });
+    uploader.on('complete', function(fileInfo) {
+        console.log('Upload Complete', fileInfo);
+    });
+    uploader.on('error', function(err) {
+        console.log('Error!', err);
+    });
+    uploader.on('abort', function(fileInfo) {
+        console.log('Aborted: ', fileInfo);
+    });
+
+    vFrm.onsubmit = function(ev) {
+      document.getElementById("res").innerHTML = "";
+      document.getElementById("vTest").value = "0%";
+
+      ev.preventDefault();
+      var fileEl = document.getElementById('fu_uploader');
+      var uploadIds = uploader.upload(fileEl.files);
+    };
+
     $(function () {
+      document.getElementById("vTest").value = "0%";
       var socket = io();
-      $('form').submit(function(){
-        socket.emit('upload_file_srv', document.getElementById('fu_uploader').files);
-        $('#m').val('');
-        return false;
+      socket.on('StreamResponse', function(pPorc){
+        document.getElementById("vTest").value = Math.trunc(pPorc) + "%";
       });
-      socket.on('upload_file_response', function(pFileLength, pMensaje){
-        var color="";
-        alert("en pantalla de vuelta "+pFileLength)
-        alert("El mensaje es  "+pMensaje)
-        if (	$("#username").val() == usr)
-        color = 'style="color:blue"';
-        else
-        color = 'style="color:red"';
 
-        $('#messages').append($('<li '+color+'>').text(msg));
-
-        window.scrollTo(0, document.body.scrollHeight);
+      socket.on('clean_field', function(){
+        document.getElementById("fu_uploader").value = "";
+        document.getElementById("res").innerHTML = "Archivo cargado exitosamente.";
       });
     });
+
   </script>
 </html>
